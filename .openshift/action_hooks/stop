@@ -5,8 +5,6 @@ source ${OPENSHIFT_REPO_DIR}/.openshift/action_hooks/common
 echo "Stopping nginx."
 if [ -f ${OPENSHIFT_RUN_DIR}/nginx.pid ];then
     kill -QUIT `cat ${OPENSHIFT_RUN_DIR}/nginx.pid`
-else
-    kill -9 `lsof -t -i :8080`
 fi
 
 echo "Stopping PHP-fpm."

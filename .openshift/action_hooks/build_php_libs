@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 function check_libtool() {
     local libtool_bin=${ROOT_DIR}/libs/bin/libtool
@@ -24,11 +24,8 @@ function install_libtool() {
     mkdir -p ${BUILD_DIR}
     pushd ${BUILD_DIR}
 
-    echo "Downloading ${pkg}."
-    wget --output-document=./${pkg} "http://gnu.xl-mirror.nl/libtool/${pkg}"
-
-    echo "Unpacking ${pkg}."
-    tar xfz ${pkg}
+    # Get archive
+    download_and_unpack ${pkg} http://gnu.xl-mirror.nl/libtool/${pkg}
     pushd libtool-${LIBTOOL_VERSION}
 
     echo "Configuring Libtool."
@@ -49,11 +46,8 @@ function install_libmcrypt() {
     mkdir -p ${BUILD_DIR}
     pushd ${BUILD_DIR}
 
-    echo "Downloading ${pkg}."
-    wget --output-document=./${pkg} "http://sourceforge.net/projects/mcrypt/files/Libmcrypt/${LIBMCRYPT_VERSION}/${pkg}/download?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmcrypt%2F&ts=${ts}&use_mirror=freefr"
-
-    echo "Unpacking ${pkg}."
-    tar xfz ${pkg}
+    # Get archive
+    download_and_unpack ${pkg} "http://sourceforge.net/projects/mcrypt/files/Libmcrypt/${LIBMCRYPT_VERSION}/${pkg}/download?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fmcrypt%2F&ts=${ts}&use_mirror=freefr"
     pushd libmcrypt-${LIBMCRYPT_VERSION}
 
     echo "Configuring LibMCrypt."
@@ -98,11 +92,8 @@ function install_icu() {
     mkdir -p ${BUILD_DIR}
     pushd ${BUILD_DIR}
 
-    echo "Downloading ${pkg}."
-    wget --output-document=./${pkg} http://download.icu-project.org/files/icu4c/${ICU_VERSION}/${pkg}
-
-    echo "Unpacking ${pkg}."
-    tar xfz ${pkg}
+    # Get archive
+    download_and_unpack ${pkg} http://download.icu-project.org/files/icu4c/${ICU_VERSION}/${pkg} icu
     pushd icu/source/
 
     echo "Configuring ICU."
@@ -132,6 +123,85 @@ function check_icu() {
             install_icu
         else
             echo "ICU up to date, version: ${icu_version}."
+        fi
+    fi
+}
+
+function install_bison() {
+    local pkg=bison-${BISON_VERSION}.tar.gz
+
+    mkdir -p ${BUILD_DIR}
+    pushd ${BUILD_DIR}
+
+    # Get archive
+    download_and_unpack ${pkg} http://ftp.gnu.org/gnu/bison/${pkg}
+    pushd bison-${BISON_VERSION}
+
+    echo "Configuring Bison."
+    ./configure --prefix=${ROOT_DIR}/libs/ --libdir=${ROOT_DIR}/libs/lib64
+
+    echo "Compiling Bison."
+    make install
+
+    popd
+    popd
+    rm -rf ${BUILD_DIR}
+}
+
+function check_bison() {
+    local bin=${ROOT_DIR}/libs/bin/bison
+    if [[ ! -e  ${bin} ]]; then
+        echo "Bison not installed."
+        install_bison
+    else
+        local version=`${bin} --version | head -n 1 | grep -oh '[0-9.]*' | head -n 1 | tr -d '\n'`
+
+        if [[ ${version} != "${BISON_VERSION}"* ]]; then
+            echo "Bison old, version: ${version}."
+            install_bison
+        else
+            echo "Bison up to date, version: ${version}."
+        fi
+    fi
+}
+
+function install_re2c() {
+    # Remark if not in PATH add RE2C=${ROOT_DIR}/libs/bin/re2c to php ./configure
+    local pkg=re2c-${RE2C_VERSION}.tar.gz
+    local ts=`date +%s`
+
+    mkdir -p ${BUILD_DIR}
+    pushd ${BUILD_DIR}
+
+    # Get archive
+    download_and_unpack ${pkg} "http://sourceforge.net/projects/re2c/files/${RE2C_VERSION}/${pkg}/download?use_mirror=nchc&r=&use_mirror=ncu"
+    pushd re2c-${RE2C_VERSION}
+
+    echo "Configuring Re2c."
+    mkdir -p ${ROOT_DIR}/libs/lib64/
+    ./configure --prefix=${ROOT_DIR}/libs/ --libdir=${ROOT_DIR}/libs/lib64
+
+    echo "Compiling Re2c."
+    make install
+
+    popd
+    popd
+    rm -rf ${BUILD_DIR}
+}
+
+function check_re2c() {
+    local re2c_bin=${ROOT_DIR}/libs/bin/re2c
+    if [[ ! -e  ${re2c_bin} ]]; then
+        echo "Re2c not installed."
+        install_re2c
+    else
+        local version=`${re2c_bin} --version | head -n 1 | grep -oh '[0-9.]*$' | tr -d '\n'`
+
+        if [[ ${RE2C_VERSION} != ${version} ]]; then
+            echo "Re2c old, version: ${version}."
+            install_re2c
+        else
+            echo "Re2c up to date, version: ${version}."
         fi
     fi
 }
